@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.loan.LoanWorkLogMapper">
+
+    <resultMap type="com.ruoyi.system.domain.loan.LoanWorkLog" id="LoanWorkLogResult">
+        <id property="logId" column="log_id" />
+        <result property="workDate" column="work_date" />
+        <result property="userId" column="user_id" />
+        <result property="userName" column="user_name" />
+        <result property="deptId" column="dept_id" />
+        <result property="deptName" column="dept_name" />
+        <result property="callCount" column="call_count" />
+        <result property="validCallCount" column="valid_call_count" />
+        <result property="intentCustomerCount" column="intent_customer_count" />
+        <result property="visitCount" column="visit_count" />
+        <result property="signedCount" column="signed_count" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <sql id="selectLoanWorkLogVo">
+        select l.log_id, l.work_date, l.user_id, l.dept_id,
+               l.call_count, l.valid_call_count, l.intent_customer_count, l.visit_count, l.signed_count,
+               l.create_by, l.create_time, l.update_by, l.update_time, l.remark,
+               u.user_name, d.dept_name
+        from loan_work_log l
+        left join sys_user u on l.user_id = u.user_id
+        left join sys_dept d on l.dept_id = d.dept_id
+    </sql>
+
+    <select id="selectLoanWorkLogById" parameterType="Long" resultMap="LoanWorkLogResult">
+        <include refid="selectLoanWorkLogVo" />
+        where l.log_id = #{logId}
+    </select>
+
+    <select id="selectLoanWorkLogList" parameterType="com.ruoyi.system.domain.loan.LoanWorkLog" resultMap="LoanWorkLogResult">
+        <include refid="selectLoanWorkLogVo" />
+        <where>
+            <if test="userId != null">
+                and l.user_id = #{userId}
+            </if>
+            <if test="userName != null and userName != ''">
+                and u.user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="deptId != null">
+                and l.dept_id = #{deptId}
+            </if>
+            <if test="workDate != null">
+                and l.work_date = #{workDate}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and l.work_date &gt;= date(#{params.beginTime})
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and l.work_date &lt;= date(#{params.endTime})
+            </if>
+            ${params.dataScope}
+        </where>
+        order by l.work_date desc, l.log_id desc
+    </select>
+
+    <insert id="insertLoanWorkLog" parameterType="com.ruoyi.system.domain.loan.LoanWorkLog" useGeneratedKeys="true" keyProperty="logId">
+        insert into loan_work_log(
+            work_date, user_id, dept_id, call_count, valid_call_count, intent_customer_count,
+            visit_count, signed_count, create_by, create_time, remark
+        ) values (
+            #{workDate}, #{userId}, #{deptId}, #{callCount}, #{validCallCount}, #{intentCustomerCount},
+            #{visitCount}, #{signedCount}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateLoanWorkLog" parameterType="com.ruoyi.system.domain.loan.LoanWorkLog">
+        update loan_work_log
+        <set>
+            <if test="workDate != null">work_date = #{workDate},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="callCount != null">call_count = #{callCount},</if>
+            <if test="validCallCount != null">valid_call_count = #{validCallCount},</if>
+            <if test="intentCustomerCount != null">intent_customer_count = #{intentCustomerCount},</if>
+            <if test="visitCount != null">visit_count = #{visitCount},</if>
+            <if test="signedCount != null">signed_count = #{signedCount},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        where log_id = #{logId}
+    </update>
+
+    <delete id="deleteLoanWorkLogByIds" parameterType="Long">
+        delete from loan_work_log where log_id in
+        <foreach collection="array" item="logId" open="(" separator="," close=")">
+            #{logId}
+        </foreach>
+    </delete>
+
+    <select id="countWorkDateUnique" resultType="int">
+        select count(1)
+        from loan_work_log
+        where user_id = #{userId}
+          and work_date = #{workDate}
+        <if test="logId != null">
+            and log_id != #{logId}
+        </if>
+    </select>
+
+    <select id="selectByUserAndDate" resultMap="LoanWorkLogResult">
+        <include refid="selectLoanWorkLogVo" />
+        where l.user_id = #{userId}
+          and l.work_date = #{workDate}
+        limit 1
+    </select>
+
+</mapper>

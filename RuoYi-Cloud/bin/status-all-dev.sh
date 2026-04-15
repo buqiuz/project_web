@@ -30,6 +30,24 @@ show_pid_status() {
   fi
 }
 
+show_url_status() {
+  local name="$1"
+  local url="$2"
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "$name: curl not found"
+    return 0
+  fi
+
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$url" || true)"
+  if [[ "$code" == "200" || "$code" == "302" || "$code" == "401" ]]; then
+    echo "$name: $code ($url)"
+  else
+    echo "$name: FAIL(${code:-N/A}) ($url)"
+  fi
+}
+
 echo "=== app processes ==="
 show_pid_status "frontend"
 show_pid_status "auth"
@@ -44,5 +62,11 @@ echo
 echo "=== middleware containers ==="
 (
   cd "$PROJECT_ROOT/docker"
-  docker compose ps ruoyi-mysql ruoyi-redis ruoyi-nacos
+  docker compose ps ruoyi-mysql ruoyi-redis ruoyi-nacos ruoyi-sentinel
 )
+
+echo
+echo "=== key urls ==="
+show_url_status "gateway" "http://localhost:8080"
+show_url_status "nacos" "http://localhost:8849/index.html"
+show_url_status "sentinel" "http://localhost:8718/#/login"

@@ -71,7 +71,7 @@ if [[ "$STOP_MIDDLEWARES" -eq 1 ]]; then
   echo "[STEP] stopping middlewares"
   (
     cd "$PROJECT_ROOT/docker"
-    docker compose stop ruoyi-nacos ruoyi-redis ruoyi-mysql
+    docker compose stop ruoyi-sentinel ruoyi-nacos ruoyi-redis ruoyi-mysql
   )
 fi
 

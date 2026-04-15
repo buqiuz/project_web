@@ -126,6 +126,27 @@ create table if not exists loan_fee_record (
 -- ----------------------------
 -- 5、系统参数（超期释放天数）
 -- ----------------------------
+create table if not exists loan_work_log (
+  log_id                bigint(20)      not null auto_increment comment '日志ID',
+  work_date             date            not null comment '工作日期',
+  user_id               bigint(20)      not null comment '销售ID',
+  dept_id               bigint(20)      default null comment '部门ID',
+  call_count            int(11)         default 0 comment '电话数',
+  valid_call_count      int(11)         default 0 comment '有效电话数',
+  intent_customer_count int(11)         default 0 comment '意向客户数',
+  visit_count           int(11)         default 0 comment '面谈客户数',
+  signed_count          int(11)         default 0 comment '签约数',
+  create_by             varchar(64)     default '' comment '创建者',
+  create_time           datetime        default null comment '创建时间',
+  update_by             varchar(64)     default '' comment '更新者',
+  update_time           datetime        default null comment '更新时间',
+  remark                varchar(500)    default null comment '备注',
+  primary key (log_id),
+  unique key uk_loan_worklog_user_date (user_id, work_date),
+  key idx_loan_worklog_work_date (work_date),
+  key idx_loan_worklog_dept_id (dept_id)
+) engine=innodb comment='销售工作日志';
+
 insert into sys_config(config_name, config_key, config_value, config_type, create_by, create_time, update_by, update_time, remark)
 select '贷款客户-公海释放天数', 'loan.customer.releaseDays', '7', 'N', 'admin', sysdate(), '', null, '客户若超过该天数未跟进自动转公海'
 from dual
@@ -150,6 +171,16 @@ insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, 
 select 3002, '合同管理', 3000, 2, 'contract', 'loan/contract/index', '', '', 1, 0, 'C', '0', '0', 'loan:contract:list', 'date', 'admin', sysdate(), '', null, '贷款合同管理菜单'
 from dual
 where not exists (select 1 from sys_menu where menu_id = 3002);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3003, '工作日志', 3000, 3, 'worklog', 'loan/worklog/index', '', '', 1, 0, 'C', '0', '0', 'loan:worklog:list', 'edit', 'admin', sysdate(), '', null, '销售工作日志菜单'
+from dual
+where not exists (select 1 from sys_menu where menu_id = 3003);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3004, '业绩看板', 3000, 4, 'performance', 'loan/performance/index', '', '', 1, 0, 'C', '0', '0', 'loan:performance:view', 'chart', 'admin', sysdate(), '', null, '贷款业绩可视化看板'
+from dual
+where not exists (select 1 from sys_menu where menu_id = 3004);
 
 -- 客户管理按钮
 insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
@@ -221,6 +252,44 @@ insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, 
 select 3026, '服务费收款', 3002, 7, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:contract:fee', '#', 'admin', sysdate(), '', null, ''
 from dual where not exists (select 1 from sys_menu where menu_id = 3026);
 
+-- 工作日志按钮
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3030, '日志查询', 3003, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:worklog:query', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3030);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3031, '日志新增', 3003, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:worklog:add', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3031);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3032, '日志修改', 3003, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:worklog:edit', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3032);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3033, '日志删除', 3003, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:worklog:remove', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3033);
+
+-- 业绩分析按钮
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3040, '业绩总览', 3004, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:performance:view', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3040);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3041, '部门业绩统计', 3004, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:performance:dept', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3041);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3042, '战区业绩统计', 3004, 3, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:performance:zone', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3042);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3043, '业绩排名', 3004, 4, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:performance:rank', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3043);
+
+insert into sys_menu(menu_id, menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
+select 3044, '提成测算', 3004, 5, '', '', '', '', 1, 0, 'F', '0', '0', 'loan:performance:commission', '#', 'admin', sysdate(), '', null, ''
+from dual where not exists (select 1 from sys_menu where menu_id = 3044);
+
 -- 普通角色默认授权（如不需要可手动删除）
 insert into sys_role_menu(role_id, menu_id)
 select 2, 3000 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3000);
@@ -228,6 +297,10 @@ insert into sys_role_menu(role_id, menu_id)
 select 2, 3001 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3001);
 insert into sys_role_menu(role_id, menu_id)
 select 2, 3002 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3002);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3003 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3003);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3004 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3004);
 insert into sys_role_menu(role_id, menu_id)
 select 2, 3010 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3010);
 insert into sys_role_menu(role_id, menu_id)
@@ -262,6 +335,37 @@ insert into sys_role_menu(role_id, menu_id)
 select 2, 3025 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3025);
 insert into sys_role_menu(role_id, menu_id)
 select 2, 3026 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3026);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3030 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3030);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3031 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3031);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3032 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3032);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3033 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3033);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3040 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3040);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3041 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3041);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3042 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3042);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3043 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3043);
+insert into sys_role_menu(role_id, menu_id)
+select 2, 3044 from dual where not exists (select 1 from sys_role_menu where role_id = 2 and menu_id = 3044);
+
+-- ----------------------------
+-- 7.1、Nacos菜单地址修复（v3控制台端口）
+-- ----------------------------
+update sys_menu
+set path = 'http://localhost:8849/index.html',
+    is_frame = 0,
+    component = '',
+    route_name = '',
+    update_by = 'admin',
+    update_time = sysdate(),
+    remark = 'Nacos控制台（v3控制台端口 8849）'
+where menu_id = 112;
 
 -- ----------------------------
 -- 7、移除默认“若依官网”菜单（适配本项目）
@@ -552,8 +656,112 @@ where not exists (
   where up.user_id = u.user_id and up.post_id = p.post_id
 );
 
+-- 业务角色授权补充：工作日志与业绩分析
+insert into sys_role_menu(role_id, menu_id)
+select r.role_id, m.menu_id
+from (
+  select 210 as role_id union all
+  select 211 union all
+  select 212 union all
+  select 213 union all
+  select 214 union all
+  select 215 union all
+  select 216
+) r
+cross join (
+  select 3004 as menu_id union all
+  select 3040 union all select 3041 union all select 3042 union all select 3043 union all select 3044
+) m
+where exists (select 1 from sys_role sr where sr.role_id = r.role_id)
+  and exists (select 1 from sys_menu sm where sm.menu_id = m.menu_id)
+  and not exists (
+    select 1 from sys_role_menu rm where rm.role_id = r.role_id and rm.menu_id = m.menu_id
+  );
+
+insert into sys_role_menu(role_id, menu_id)
+select r.role_id, m.menu_id
+from (
+  select 210 as role_id union all
+  select 211 union all
+  select 212 union all
+  select 216
+) r
+cross join (
+  select 3003 as menu_id union all
+  select 3030 union all select 3031 union all select 3032 union all select 3033
+) m
+where exists (select 1 from sys_role sr where sr.role_id = r.role_id)
+  and exists (select 1 from sys_menu sm where sm.menu_id = m.menu_id)
+  and not exists (
+    select 1 from sys_role_menu rm where rm.role_id = r.role_id and rm.menu_id = m.menu_id
+  );
+
+insert into sys_role_menu(role_id, menu_id)
+select r.role_id, m.menu_id
+from (
+  select 213 as role_id union all
+  select 214 union all
+  select 215
+) r
+cross join (
+  select 3003 as menu_id union all
+  select 3030
+) m
+where exists (select 1 from sys_role sr where sr.role_id = r.role_id)
+  and exists (select 1 from sys_menu sm where sm.menu_id = m.menu_id)
+  and not exists (
+    select 1 from sys_role_menu rm where rm.role_id = r.role_id and rm.menu_id = m.menu_id
+  );
+
 -- ----------------------------
--- 12、客户与合同样例数据（各220条，可重复执行）
+-- 12、工作日志样例数据（近30天）
+-- ----------------------------
+insert into loan_work_log(
+  work_date, user_id, dept_id, call_count, valid_call_count,
+  intent_customer_count, visit_count, signed_count,
+  create_by, create_time, update_by, update_time, remark
+)
+select date_sub(curdate(), interval s.day_no day) as work_date,
+       u.user_id,
+       u.dept_id,
+       35 + mod(s.day_no * 7 + s.user_no * 5, 40) as call_count,
+       12 + mod(s.day_no * 3 + s.user_no * 2, 22) as valid_call_count,
+       4 + mod(s.day_no + s.user_no, 10) as intent_customer_count,
+       2 + mod(s.day_no + s.user_no * 2, 6) as visit_count,
+       mod(s.day_no + s.user_no, 4) as signed_count,
+       'loan.seed', sysdate(), '', null,
+       '工作日志样例'
+from (
+  select d.n as day_no, u.n as user_no
+  from (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4 union all
+    select 5 union all select 6 union all select 7 union all select 8 union all select 9 union all
+    select 10 union all select 11 union all select 12 union all select 13 union all select 14 union all
+    select 15 union all select 16 union all select 17 union all select 18 union all select 19 union all
+    select 20 union all select 21 union all select 22 union all select 23 union all select 24 union all
+    select 25 union all select 26 union all select 27 union all select 28 union all select 29
+  ) d
+  cross join (
+    select 1 as n union all select 2 union all select 3 union all select 4
+  ) u
+) s
+inner join (
+  select 1 as user_no, user_id, dept_id from sys_user where user_name = 'loan_sales_a1'
+  union all
+  select 2 as user_no, user_id, dept_id from sys_user where user_name = 'loan_sales_a2'
+  union all
+  select 3 as user_no, user_id, dept_id from sys_user where user_name = 'loan_sales_b1'
+  union all
+  select 4 as user_no, user_id, dept_id from sys_user where user_name = 'loan_sales_b2'
+) u on s.user_no = u.user_no
+where not exists (
+  select 1 from loan_work_log lw
+  where lw.user_id = u.user_id
+    and lw.work_date = date_sub(curdate(), interval s.day_no day)
+);
+
+-- ----------------------------
+-- 13、客户与合同样例数据（各220条，可重复执行）
 -- ----------------------------
 insert into loan_customer(
   customer_name, customer_type, phone, id_card_no, company_name, business_license_no,

@@ -1,5 +1,15 @@
 # WSL 开发环境与启动手册（RuoYi-Cloud）
 
+> 账号：
+>
+> 登录账号：admin  admin123
+>
+> admin控制台：ruoyi 123456
+>
+> nacos：nacos nacos
+>
+> Sentinel：sentinel sentinel
+
 ## 1. 结论
 
 你指定的 WSL 发行版可访问：Ubuntu-24.04-Second。
@@ -125,12 +135,20 @@ mvn -pl ruoyi-gateway -am -DskipTests compile
 
 建议按下面顺序启动。
 
-### 5.1 启动基础中间件（MySQL/Redis/Nacos）
+### 5.1 启动基础中间件（MySQL/Redis/Nacos/Sentinel）
 
 ~~~bash
 cd /mnt/f/code/project_web/RuoYi-Cloud/docker
 docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos
 docker compose ps
+~~~
+
+如需同时拉起 Sentinel 控制台：
+
+~~~bash
+cd /mnt/f/code/project_web/RuoYi-Cloud/docker
+docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos ruoyi-sentinel
+docker compose ps ruoyi-sentinel
 ~~~
 
 说明：
@@ -307,6 +325,13 @@ cd /mnt/f/code/project_web/RuoYi-Cloud/docker
 docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos
 ~~~
 
+如需联调 Sentinel 菜单：
+
+~~~bash
+cd /mnt/f/code/project_web/RuoYi-Cloud/docker
+docker compose up -d ruoyi-sentinel
+~~~
+
 4. 启动后端服务（最少 auth/system/gateway，完整联调用 5.2 全量命令）。
 5. 启动前端：
 
@@ -341,6 +366,10 @@ node -v
 - 再确认是否是第一次初始化 MySQL（命名卷已有数据时不会再次自动导入）。
 - 需要重导入时按 5.1 章节的删除 MySQL 命名卷步骤执行。
 
+6. 系统监控 -> Sentinel 打不开：
+- 执行 docker compose ps ruoyi-sentinel，确认容器处于 Up。
+- 访问 http://localhost:8718/#/login 验证控制台可达。
+
 ## 9. 一键封装脚本
 
 已提供以下脚本：
@@ -367,6 +396,8 @@ cd /mnt/f/code/project_web/RuoYi-Cloud
 说明：
 - `start-all-dev.sh` 默认会先执行一次 Maven 预构建（install）来解决 `com.ruoyi:*` 本地依赖缺失问题。
 - 如果你刚刚已经完整构建过，可加 `--skip-build` 跳过预构建以加速启动。
+- `start-all-dev.sh` 默认会自动尝试修复 Nacos/Sentinel 菜单入口（可通过 `--no-menu-fix` 关闭）。
+- `start-all-dev.sh` 默认会一并启动 ruoyi-sentinel 容器。
 
 只启动后端（不拉起中间件和前端）：
 

@@ -13,6 +13,7 @@ mkdir -p "$RUN_DIR" "$LOG_DIR"
 START_MIDDLEWARES=1
 START_FRONTEND=1
 START_BUILD=1
+START_MENU_FIX=1
 
 for arg in "$@"; do
   case "$arg" in
@@ -25,13 +26,73 @@ for arg in "$@"; do
     --skip-build)
       START_BUILD=0
       ;;
+    --no-menu-fix)
+      START_MENU_FIX=0
+      ;;
     *)
       echo "Unknown option: $arg"
-      echo "Usage: $0 [--no-middlewares] [--no-frontend] [--skip-build]"
+      echo "Usage: $0 [--no-middlewares] [--no-frontend] [--skip-build] [--no-menu-fix]"
       exit 1
       ;;
   esac
 done
+
+apply_console_menu_fixes() {
+  local sql
+  sql="
+update sys_menu
+set path='http://localhost:8718', is_frame=0, component='', route_name='', update_by='admin', update_time=sysdate(), remark='Sentinel控制台（8718）'
+where menu_id=111;
+
+update sys_menu
+set path='http://localhost:8849/index.html', is_frame=0, component='', route_name='', update_by='admin', update_time=sysdate(), remark='Nacos控制台（v3控制台端口 8849）'
+where menu_id=112;
+"
+
+  echo "[STEP] applying console menu fixes"
+  for _ in {1..20}; do
+    if (
+      cd "$PROJECT_ROOT/docker"
+      docker compose exec -T ruoyi-mysql mysql -uroot -ppassword -D ry-cloud -e "$sql" >/dev/null 2>&1
+    ); then
+      echo "[OK] console menu fixes applied"
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "[WARN] could not apply menu fixes now (mysql may be unavailable)."
+  echo "       you can rerun this script later or run SQL manually."
+}
+
+check_url() {
+  local name="$1"
+  local url="$2"
+  local code=""
+
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "[SKIP] curl not found, skip $name check"
+    return 0
+  fi
+
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$url" || true)"
+  if [[ "$code" == "200" || "$code" == "302" || "$code" == "401" ]]; then
+    echo "[OK] $name => $code ($url)"
+  else
+    echo "[WARN] $name => ${code:-N/A} ($url)"
+  fi
+}
+
+print_access_summary() {
+  echo
+  echo "=== Access Summary ==="
+  echo "Frontend(default):   http://localhost:80"
+  echo "Gateway:             http://localhost:8080"
+  echo "Nacos:               http://localhost:8849/index.html"
+  echo "Sentinel:            http://localhost:8718/#/login"
+  echo "Monitor(Admin):      http://localhost:9100/login"
+  echo
+}
 
 cleanup_stale_pid() {
   local pid_file="$1"
@@ -155,8 +216,12 @@ if [[ "$START_MIDDLEWARES" -eq 1 ]]; then
   echo "[STEP] starting middlewares"
   (
     cd "$PROJECT_ROOT/docker"
-    docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos
+    docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos ruoyi-sentinel
   )
+fi
+
+if [[ "$START_MENU_FIX" -eq 1 ]]; then
+  apply_console_menu_fixes
 fi
 
 if [[ "$START_BUILD" -eq 1 ]]; then
@@ -176,5 +241,9 @@ if [[ "$START_FRONTEND" -eq 1 ]]; then
   echo "[STEP] starting frontend"
   start_frontend
 fi
+
+print_access_summary
+check_url "Sentinel" "http://localhost:8718/#/login"
+check_url "Nacos" "http://localhost:8849/index.html"
 
 echo "[DONE] all requested services have been started"

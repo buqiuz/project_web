@@ -1,0 +1,170 @@
+package com.ruoyi.system.domain.loan.vo;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+/**
+ * 业绩总览
+ *
+ * @author ruoyi
+ */
+public class LoanPerformanceOverviewVo implements Serializable
+{
+    private static final long serialVersionUID = 1L;
+
+    private Long salesUserCount;
+
+    private Long contractCount;
+
+    private BigDecimal contractAmount;
+
+    private Long loanedCount;
+
+    private BigDecimal loanedAmount;
+
+    private BigDecimal feeIncome;
+
+    private BigDecimal commissionTotal;
+
+    private Long callCount;
+
+    private Long validCallCount;
+
+    private Long intentCustomerCount;
+
+    private Long visitCount;
+
+    private Long signedCount;
+
+    private BigDecimal conversionRate;
+
+    public Long getSalesUserCount()
+    {
+        return salesUserCount;
+    }
+
+    public void setSalesUserCount(Long salesUserCount)
+    {
+        this.salesUserCount = salesUserCount;
+    }
+
+    public Long getContractCount()
+    {
+        return contractCount;
+    }
+
+    public void setContractCount(Long contractCount)
+    {
+        this.contractCount = contractCount;
+    }
+
+    public BigDecimal getContractAmount()
+    {
+        return contractAmount;
+    }
+
+    public void setContractAmount(BigDecimal contractAmount)
+    {
+        this.contractAmount = contractAmount;
+    }
+
+    public Long getLoanedCount()
+    {
+        return loanedCount;
+    }
+
+    public void setLoanedCount(Long loanedCount)
+    {
+        this.loanedCount = loanedCount;
+    }
+
+    public BigDecimal getLoanedAmount()
+    {
+        return loanedAmount;
+    }
+
+    public void setLoanedAmount(BigDecimal loanedAmount)
+    {
+        this.loanedAmount = loanedAmount;
+    }
+
+    public BigDecimal getFeeIncome()
+    {
+        return feeIncome;
+    }
+
+    public void setFeeIncome(BigDecimal feeIncome)
+    {
+        this.feeIncome = feeIncome;
+    }
+
+    public BigDecimal getCommissionTotal()
+    {
+        return commissionTotal;
+    }
+
+    public void setCommissionTotal(BigDecimal commissionTotal)
+    {
+        this.commissionTotal = commissionTotal;
+    }
+
+    public Long getCallCount()
+    {
+        return callCount;
+    }
+
+    public void setCallCount(Long callCount)
+    {
+        this.callCount = callCount;
+    }
+
+    public Long getValidCallCount()
+    {
+        return validCallCount;
+    }
+
+    public void setValidCallCount(Long validCallCount)
+    {
+        this.validCallCount = validCallCount;
+    }
+
+    public Long getIntentCustomerCount()
+    {
+        return intentCustomerCount;
+    }
+
+    public void setIntentCustomerCount(Long intentCustomerCount)
+    {
+        this.intentCustomerCount = intentCustomerCount;
+    }
+
+    public Long getVisitCount()
+    {
+        return visitCount;
+    }
+
+    public void setVisitCount(Long visitCount)
+    {
+        this.visitCount = visitCount;
+    }
+
+    public Long getSignedCount()
+    {
+        return signedCount;
+    }
+
+    public void setSignedCount(Long signedCount)
+    {
+        this.signedCount = signedCount;
+    }
+
+    public BigDecimal getConversionRate()
+    {
+        return conversionRate;
+    }
+
+    public void setConversionRate(BigDecimal conversionRate)
+    {
+        this.conversionRate = conversionRate;
+    }
+}
