@@ -268,3 +268,412 @@ select 2, 3026 from dual where not exists (select 1 from sys_role_menu where rol
 -- ----------------------------
 delete from sys_role_menu where menu_id = 4;
 delete from sys_menu where menu_id = 4;
+
+-- ----------------------------
+-- 8、组织架构（2个战区 + 8个销售部 + 金融部）
+-- ----------------------------
+insert into sys_dept(
+  dept_id, parent_id, ancestors, dept_name, order_num, leader, phone, email,
+  status, del_flag, create_by, create_time, update_by, update_time
+)
+select p.dept_id, p.parent_id, p.ancestors, p.dept_name, p.order_num, p.leader, p.phone, p.email,
+       '0', '0', 'admin', sysdate(), '', null
+from (
+  select 200 as dept_id, 0 as parent_id, '0' as ancestors, '大富翁金融公司' as dept_name, 10 as order_num, '总经理办公室' as leader, '13800000001' as phone, 'gm@dfw.local' as email
+  union all select 210, 200, '0,200', '第一战区', 1, '战区总监A', '13800000011', 'zone1@dfw.local'
+  union all select 211, 210, '0,200,210', '第一战区-销售一部', 1, '部门经理A1', '13800000111', 'sale11@dfw.local'
+  union all select 212, 210, '0,200,210', '第一战区-销售二部', 2, '部门经理A2', '13800000112', 'sale12@dfw.local'
+  union all select 213, 210, '0,200,210', '第一战区-销售三部', 3, '部门经理A3', '13800000113', 'sale13@dfw.local'
+  union all select 214, 210, '0,200,210', '第一战区-销售四部', 4, '部门经理A4', '13800000114', 'sale14@dfw.local'
+  union all select 220, 200, '0,200', '第二战区', 2, '战区总监B', '13800000021', 'zone2@dfw.local'
+  union all select 215, 220, '0,200,220', '第二战区-销售五部', 1, '部门经理B1', '13800000115', 'sale15@dfw.local'
+  union all select 216, 220, '0,200,220', '第二战区-销售六部', 2, '部门经理B2', '13800000116', 'sale16@dfw.local'
+  union all select 217, 220, '0,200,220', '第二战区-销售七部', 3, '部门经理B3', '13800000117', 'sale17@dfw.local'
+  union all select 218, 220, '0,200,220', '第二战区-销售八部', 4, '部门经理B4', '13800000118', 'sale18@dfw.local'
+  union all select 230, 200, '0,200', '金融部', 3, '金融经理', '13800000030', 'finance@dfw.local'
+  union all select 231, 230, '0,200,230', '金融部-风控审核组', 1, '审核组长', '13800000031', 'risk@dfw.local'
+  union all select 232, 230, '0,200,230', '金融部-放款运营组', 2, '放款组长', '13800000032', 'loanops@dfw.local'
+  union all select 233, 230, '0,200,230', '金融部-财务会计组', 3, '会计主管', '13800000033', 'account@dfw.local'
+) p
+where not exists (select 1 from sys_dept d where d.dept_id = p.dept_id);
+
+-- 组织结构标准化：删除若依科技，统一保留“大富翁金融公司”
+update sys_dept
+set dept_name = '大富翁金融公司',
+    parent_id = 0,
+    ancestors = '0',
+    leader = '总经理办公室',
+    update_by = 'admin',
+    update_time = sysdate()
+where dept_id = 200;
+
+update sys_dept
+set dept_name = '大富翁金融公司',
+    parent_id = 0,
+    ancestors = '0',
+    leader = '总经理办公室',
+    update_by = 'admin',
+    update_time = sysdate()
+where dept_name in ('大富翁金融事业部', '大富豪金融事业部');
+
+update sys_dept
+set ancestors = replace(ancestors, '0,100,200', '0,200'),
+    update_by = 'admin',
+    update_time = sysdate()
+where ancestors like '0,100,200%';
+
+update sys_dept
+set parent_id = 200,
+    ancestors = '0,200',
+    update_by = 'admin',
+    update_time = sysdate()
+where dept_id in (210, 220, 230);
+
+update sys_user
+set dept_id = 211
+where dept_id in (100, 101, 102, 103, 104, 105, 106, 107, 108, 109);
+
+delete from sys_role_dept where dept_id in (100, 101, 102, 103, 104, 105, 106, 107, 108, 109);
+insert into sys_role_dept(role_id, dept_id)
+select 2, 200 from dual where not exists (select 1 from sys_role_dept where role_id = 2 and dept_id = 200);
+
+delete from sys_dept where dept_id in (100, 101, 102, 103, 104, 105, 106, 107, 108, 109);
+
+-- ----------------------------
+-- 9、岗位信息（贴合贷款业务）
+-- ----------------------------
+insert into sys_post(post_id, post_code, post_name, post_sort, status, create_by, create_time, update_by, update_time, remark)
+select p.post_id, p.post_code, p.post_name, p.post_sort, '0', 'admin', sysdate(), '', null, p.remark
+from (
+  select 10 as post_id, 'loan_sales_director' as post_code, '销售总监' as post_name, 10 as post_sort, '战区业绩统筹' as remark
+  union all select 11, 'loan_sales_manager', '销售经理', 11, '部门客户与业绩管理'
+  union all select 12, 'loan_sales_rep', '销售代表', 12, '客户开发与签约'
+  union all select 13, 'loan_fin_manager', '金融经理', 13, '金融审核管理'
+  union all select 14, 'loan_fin_specialist', '金融专员', 14, '合同审核与放款跟进'
+  union all select 15, 'loan_accountant', '会计', 15, '服务费收款登记'
+  union all select 16, 'loan_general_manager', '总经理', 16, '全局经营管理'
+  union all select 17, 'loan_dept_manager', '部门经理', 17, '部门客户与人员管理'
+) p
+where not exists (select 1 from sys_post sp where sp.post_id = p.post_id);
+
+update sys_post
+set post_code = 'loan_general_manager',
+    post_name = '总经理',
+    post_sort = 16,
+    status = '0',
+    update_by = 'admin',
+    update_time = sysdate(),
+    remark = '全局经营管理'
+where post_id = 16;
+
+update sys_post
+set post_code = 'loan_dept_manager',
+    post_name = '部门经理',
+    post_sort = 17,
+    status = '0',
+    update_by = 'admin',
+    update_time = sysdate(),
+    remark = '部门客户与人员管理'
+where post_id = 17;
+
+insert into sys_user_post(user_id, post_id)
+select up.user_id, 16
+from sys_user_post up
+where up.post_id = 1
+  and not exists (select 1 from sys_user_post t where t.user_id = up.user_id and t.post_id = 16);
+
+insert into sys_user_post(user_id, post_id)
+select up.user_id, 17
+from sys_user_post up
+where up.post_id in (2, 3)
+  and not exists (select 1 from sys_user_post t where t.user_id = up.user_id and t.post_id = 17);
+
+delete from sys_user_post where post_id in (1, 2, 3);
+delete from sys_post where post_id in (1, 2, 3);
+
+-- ----------------------------
+-- 10、业务角色与权限
+-- ----------------------------
+insert into sys_role(
+  role_id, role_name, role_key, role_sort, data_scope, menu_check_strictly, dept_check_strictly,
+  status, del_flag, create_by, create_time, update_by, update_time, remark
+)
+select p.role_id, p.role_name, p.role_key, p.role_sort, p.data_scope, 1, 1,
+       '0', '0', 'admin', sysdate(), '', null, p.remark
+from (
+  select 210 as role_id, '销售代表' as role_name, 'loan_sales_rep' as role_key, 10 as role_sort, '5' as data_scope, '仅本人客户与合同处理' as remark
+  union all select 211, '销售经理', 'loan_sales_manager', 11, '3', '本部门客户管理与业绩统计'
+  union all select 212, '销售总监', 'loan_sales_director', 12, '2', '战区维度经营分析'
+  union all select 213, '金融专员', 'loan_fin_specialist', 13, '3', '合同审核与放款跟进'
+  union all select 214, '金融经理', 'loan_fin_manager', 14, '4', '金融部及下级团队管理'
+  union all select 215, '会计', 'loan_accountant', 15, '3', '服务费登记与核对'
+  union all select 216, '总经理', 'loan_general_manager', 16, '1', '全量经营数据查看'
+) p
+where not exists (select 1 from sys_role r where r.role_id = p.role_id);
+
+insert into sys_role_menu(role_id, menu_id)
+select p.role_id, p.menu_id
+from (
+  -- 销售代表
+  select 210 as role_id, 3000 as menu_id union all
+  select 210, 3001 union all select 210, 3002 union all
+  select 210, 3010 union all select 210, 3011 union all select 210, 3012 union all
+  select 210, 3018 union all select 210, 3020 union all select 210, 3021 union all
+  -- 销售经理
+  select 211, 3000 union all
+  select 211, 3001 union all select 211, 3002 union all
+  select 211, 3010 union all select 211, 3011 union all select 211, 3012 union all
+  select 211, 3014 union all select 211, 3015 union all select 211, 3016 union all
+  select 211, 3018 union all select 211, 3019 union all
+  select 211, 3020 union all select 211, 3021 union all select 211, 3022 union all select 211, 3024 union all
+  -- 销售总监
+  select 212, 3000 union all
+  select 212, 3001 union all select 212, 3002 union all
+  select 212, 3010 union all
+  select 212, 3020 union all
+  -- 金融专员
+  select 213, 3000 union all
+  select 213, 3001 union all select 213, 3002 union all
+  select 213, 3010 union all
+  select 213, 3020 union all select 213, 3025 union all select 213, 3026 union all
+  -- 金融经理
+  select 214, 3000 union all
+  select 214, 3001 union all select 214, 3002 union all
+  select 214, 3010 union all
+  select 214, 3020 union all select 214, 3022 union all
+  select 214, 3024 union all select 214, 3025 union all select 214, 3026 union all
+  -- 会计
+  select 215, 3000 union all
+  select 215, 3002 union all
+  select 215, 3020 union all select 215, 3026 union all
+  -- 总经理
+  select 216, 3000 union all
+  select 216, 3001 union all select 216, 3002 union all
+  select 216, 3010 union all select 216, 3011 union all select 216, 3012 union all
+  select 216, 3013 union all select 216, 3014 union all select 216, 3015 union all
+  select 216, 3016 union all select 216, 3017 union all select 216, 3018 union all select 216, 3019 union all
+  select 216, 3020 union all select 216, 3021 union all select 216, 3022 union all select 216, 3023 union all
+  select 216, 3024 union all select 216, 3025 union all select 216, 3026
+) p
+where exists (select 1 from sys_role r where r.role_id = p.role_id)
+  and exists (select 1 from sys_menu m where m.menu_id = p.menu_id)
+  and not exists (
+    select 1 from sys_role_menu rm
+    where rm.role_id = p.role_id and rm.menu_id = p.menu_id
+  );
+
+-- 销售总监按战区配置自定义数据范围
+insert into sys_role_dept(role_id, dept_id)
+select 212, p.dept_id
+from (
+  select 210 as dept_id union all select 220 union all
+  select 211 union all select 212 union all select 213 union all select 214 union all
+  select 215 union all select 216 union all select 217 union all select 218
+) p
+where exists (select 1 from sys_role r where r.role_id = 212)
+  and exists (select 1 from sys_dept d where d.dept_id = p.dept_id)
+  and not exists (
+    select 1 from sys_role_dept rd
+    where rd.role_id = 212 and rd.dept_id = p.dept_id
+  );
+
+-- ----------------------------
+-- 11、业务示例账号（用于快速验收权限）
+-- ----------------------------
+insert into sys_user(
+  dept_id, user_name, nick_name, user_type, email, phonenumber, sex, avatar,
+  password, status, del_flag, login_ip, login_date, pwd_update_date,
+  create_by, create_time, update_by, update_time, remark
+)
+select p.dept_id, p.user_name, p.nick_name, '00', p.email, p.phone, '0', '',
+       '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2',
+       '0', '0', '', null, sysdate(),
+       'admin', sysdate(), '', null, p.remark
+from (
+  select 200 as dept_id, 'loan_gm' as user_name, '贷款总经理' as nick_name, 'loan_gm@dfw.local' as email, '13790000001' as phone, '总经理账号' as remark
+  union all select 210, 'loan_director_a', '销售总监A', 'director_a@dfw.local', '13790000002', '第一战区总监'
+  union all select 220, 'loan_director_b', '销售总监B', 'director_b@dfw.local', '13790000003', '第二战区总监'
+  union all select 211, 'loan_manager_a1', '销售经理A1', 'manager_a1@dfw.local', '13790000004', '第一战区销售一部经理'
+  union all select 215, 'loan_manager_b1', '销售经理B1', 'manager_b1@dfw.local', '13790000005', '第二战区销售五部经理'
+  union all select 211, 'loan_sales_a1', '销售代表A1', 'sales_a1@dfw.local', '13790000006', '销售代表'
+  union all select 212, 'loan_sales_a2', '销售代表A2', 'sales_a2@dfw.local', '13790000007', '销售代表'
+  union all select 215, 'loan_sales_b1', '销售代表B1', 'sales_b1@dfw.local', '13790000008', '销售代表'
+  union all select 216, 'loan_sales_b2', '销售代表B2', 'sales_b2@dfw.local', '13790000009', '销售代表'
+  union all select 230, 'loan_fin_mgr', '金融经理', 'fin_mgr@dfw.local', '13790000010', '金融经理'
+  union all select 231, 'loan_fin_sp1', '金融专员1', 'fin_sp1@dfw.local', '13790000011', '金融审核专员'
+  union all select 232, 'loan_fin_sp2', '金融专员2', 'fin_sp2@dfw.local', '13790000012', '放款跟进专员'
+  union all select 233, 'loan_acc', '会计', 'loan_acc@dfw.local', '13790000013', '服务费收款会计'
+) p
+where not exists (select 1 from sys_user u where u.user_name = p.user_name);
+
+insert into sys_user_role(user_id, role_id)
+select u.user_id, p.role_id
+from (
+  select 'loan_gm' as user_name, 216 as role_id union all
+  select 'loan_director_a', 212 union all
+  select 'loan_director_b', 212 union all
+  select 'loan_manager_a1', 211 union all
+  select 'loan_manager_b1', 211 union all
+  select 'loan_sales_a1', 210 union all
+  select 'loan_sales_a2', 210 union all
+  select 'loan_sales_b1', 210 union all
+  select 'loan_sales_b2', 210 union all
+  select 'loan_fin_mgr', 214 union all
+  select 'loan_fin_sp1', 213 union all
+  select 'loan_fin_sp2', 213 union all
+  select 'loan_acc', 215
+) p
+inner join sys_user u on u.user_name = p.user_name
+where not exists (
+  select 1 from sys_user_role ur
+  where ur.user_id = u.user_id and ur.role_id = p.role_id
+);
+
+insert into sys_user_post(user_id, post_id)
+select u.user_id, p.post_id
+from (
+  select 'loan_gm' as user_name, 16 as post_id union all
+  select 'loan_director_a', 10 union all
+  select 'loan_director_b', 10 union all
+  select 'loan_manager_a1', 11 union all
+  select 'loan_manager_b1', 11 union all
+  select 'loan_sales_a1', 12 union all
+  select 'loan_sales_a2', 12 union all
+  select 'loan_sales_b1', 12 union all
+  select 'loan_sales_b2', 12 union all
+  select 'loan_fin_mgr', 13 union all
+  select 'loan_fin_sp1', 14 union all
+  select 'loan_fin_sp2', 14 union all
+  select 'loan_acc', 15
+) p
+inner join sys_user u on u.user_name = p.user_name
+where not exists (
+  select 1 from sys_user_post up
+  where up.user_id = u.user_id and up.post_id = p.post_id
+);
+
+-- ----------------------------
+-- 12、客户与合同样例数据（各220条，可重复执行）
+-- ----------------------------
+insert into loan_customer(
+  customer_name, customer_type, phone, id_card_no, company_name, business_license_no,
+  source_type, intent_level, intent_amount, status, user_id, dept_id,
+  last_follow_time, next_follow_time, signed_time, sea_time, transfer_remark,
+  create_by, create_time, update_by, update_time, remark
+)
+select concat('样例客户', lpad(s.n, 4, '0')) as customer_name,
+       case when mod(s.n, 4) = 0 then 'C' else 'P' end as customer_type,
+       concat('139', lpad(s.n, 8, '0')) as phone,
+       case when mod(s.n, 4) = 0 then null else concat('4301', lpad(s.n, 14, '0')) end as id_card_no,
+       case when mod(s.n, 4) = 0 then concat('大富翁合作企业', lpad(s.n, 4, '0')) else null end as company_name,
+       case when mod(s.n, 4) = 0 then concat('915001', lpad(s.n, 12, '0')) else null end as business_license_no,
+       case mod(s.n, 3) when 0 then 'INTRO' when 1 then 'PHONE' else 'REFERRAL' end as source_type,
+       case mod(s.n, 3) when 0 then 'A' when 1 then 'B' else 'C' end as intent_level,
+       cast(50000 + mod(s.n * 137, 300000) as decimal(14,2)) as intent_amount,
+       case when mod(s.n, 9) = 0 then 'SEA' when mod(s.n, 5) = 0 then 'SIGNED' else 'PRIVATE' end as status,
+       case mod(s.n, 4)
+         when 1 then sa1.user_id
+         when 2 then sa2.user_id
+         when 3 then sb1.user_id
+         else sb2.user_id
+       end as user_id,
+       case mod(s.n, 4) when 1 then 211 when 2 then 212 when 3 then 215 else 216 end as dept_id,
+       date_sub(sysdate(), interval mod(s.n, 45) day) as last_follow_time,
+       date_add(sysdate(), interval mod(s.n, 15) + 1 day) as next_follow_time,
+       case when mod(s.n, 5) = 0 then date_sub(sysdate(), interval mod(s.n, 80) day) else null end as signed_time,
+       case when mod(s.n, 9) = 0 then date_sub(sysdate(), interval mod(s.n, 20) day) else null end as sea_time,
+       case when mod(s.n, 9) = 0 then '超期自动转入公海（样例）' else null end as transfer_remark,
+       'loan.seed', date_sub(sysdate(), interval mod(s.n, 90) day), 'loan.seed', sysdate(),
+       '贷款业务样例客户数据'
+from (
+  select ones.n + tens.n * 10 + hundreds.n * 100 + 1 as n
+  from (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4
+    union all select 5 union all select 6 union all select 7 union all select 8 union all select 9
+  ) ones
+  cross join (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4
+    union all select 5 union all select 6 union all select 7 union all select 8 union all select 9
+  ) tens
+  cross join (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4
+    union all select 5 union all select 6 union all select 7 union all select 8 union all select 9
+  ) hundreds
+) s
+left join (select user_id from sys_user where user_name = 'loan_sales_a1' limit 1) sa1 on 1 = 1
+left join (select user_id from sys_user where user_name = 'loan_sales_a2' limit 1) sa2 on 1 = 1
+left join (select user_id from sys_user where user_name = 'loan_sales_b1' limit 1) sb1 on 1 = 1
+left join (select user_id from sys_user where user_name = 'loan_sales_b2' limit 1) sb2 on 1 = 1
+where s.n <= 220
+  and not exists (
+  select 1 from loan_customer c where c.phone = concat('139', lpad(s.n, 8, '0'))
+);
+
+insert into loan_contract(
+  contract_no, customer_id, user_id, dept_id, product_name, attachment_urls,
+  contract_amount, disburse_amount,
+  first_fee_amount, second_fee_amount, first_fee_paid, second_fee_paid,
+  status, sign_time, submit_time, finance_audit_time, bank_loan_time,
+  finance_user_id, bank_result,
+  create_by, create_time, update_by, update_time, remark
+)
+select concat('LC', lpad(s.n, 6, '0')) as contract_no,
+       c.customer_id,
+       c.user_id,
+       c.dept_id,
+       case mod(s.n, 4) when 0 then '车抵贷' when 1 then '经营贷' when 2 then '税票贷' else '信用贷' end as product_name,
+       'https://example.com/contract/sample.pdf' as attachment_urls,
+       cast(80000 + mod(s.n * 521, 420000) as decimal(14,2)) as contract_amount,
+       case
+         when mod(s.n, 4) = 0 then cast((80000 + mod(s.n * 521, 420000)) * 0.95 as decimal(14,2))
+         else 0.00
+       end as disburse_amount,
+       cast((80000 + mod(s.n * 521, 420000)) * 0.02 as decimal(14,2)) as first_fee_amount,
+       cast((80000 + mod(s.n * 521, 420000)) * 0.01 as decimal(14,2)) as second_fee_amount,
+       cast((80000 + mod(s.n * 521, 420000)) * 0.02 as decimal(14,2)) as first_fee_paid,
+       case
+         when mod(s.n, 4) = 0 then cast((80000 + mod(s.n * 521, 420000)) * 0.005 as decimal(14,2))
+         else 0.00
+       end as second_fee_paid,
+       case
+         when mod(s.n, 10) = 0 then 'REJECTED'
+         when mod(s.n, 4) = 0 then 'LOANED'
+         when mod(s.n, 3) = 0 then 'BANK_REVIEW'
+         else 'FINANCE_REVIEW'
+       end as status,
+       date_sub(sysdate(), interval mod(s.n, 60) + 5 day) as sign_time,
+       date_sub(sysdate(), interval mod(s.n, 60) + 4 day) as submit_time,
+       date_sub(sysdate(), interval mod(s.n, 60) + 2 day) as finance_audit_time,
+       case when mod(s.n, 4) = 0 then date_sub(sysdate(), interval mod(s.n, 30) day) else null end as bank_loan_time,
+       case when mod(s.n, 2) = 0 then f1.user_id else f2.user_id end as finance_user_id,
+       case
+         when mod(s.n, 10) = 0 then '银行拒绝：征信评分不足（样例）'
+         when mod(s.n, 4) = 0 then '银行放款成功（样例）'
+         when mod(s.n, 3) = 0 then '银行复核中（样例）'
+         else '金融审核中（样例）'
+       end as bank_result,
+       'loan.seed', date_sub(sysdate(), interval mod(s.n, 90) day), 'loan.seed', sysdate(),
+       '贷款业务样例合同数据'
+from (
+  select ones.n + tens.n * 10 + hundreds.n * 100 + 1 as n
+  from (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4
+    union all select 5 union all select 6 union all select 7 union all select 8 union all select 9
+  ) ones
+  cross join (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4
+    union all select 5 union all select 6 union all select 7 union all select 8 union all select 9
+  ) tens
+  cross join (
+    select 0 as n union all select 1 union all select 2 union all select 3 union all select 4
+    union all select 5 union all select 6 union all select 7 union all select 8 union all select 9
+  ) hundreds
+) s
+inner join loan_customer c
+  on c.phone = concat('139', lpad(s.n, 8, '0'))
+left join (select user_id from sys_user where user_name = 'loan_fin_sp1' limit 1) f1 on 1 = 1
+left join (select user_id from sys_user where user_name = 'loan_fin_sp2' limit 1) f2 on 1 = 1
+where s.n <= 220
+  and not exists (
+  select 1 from loan_contract ct where ct.contract_no = concat('LC', lpad(s.n, 6, '0'))
+);
