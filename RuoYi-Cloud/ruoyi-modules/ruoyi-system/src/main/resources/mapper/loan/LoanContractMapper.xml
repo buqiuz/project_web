@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.loan.LoanContractMapper">
+
+    <resultMap type="com.ruoyi.system.domain.loan.LoanContract" id="LoanContractResult">
+        <id property="contractId" column="contract_id" />
+        <result property="contractNo" column="contract_no" />
+        <result property="customerId" column="customer_id" />
+        <result property="customerName" column="customer_name" />
+        <result property="userId" column="user_id" />
+        <result property="userName" column="user_name" />
+        <result property="deptId" column="dept_id" />
+        <result property="productName" column="product_name" />
+        <result property="attachmentUrls" column="attachment_urls" />
+        <result property="contractAmount" column="contract_amount" />
+        <result property="disburseAmount" column="disburse_amount" />
+        <result property="firstFeeAmount" column="first_fee_amount" />
+        <result property="secondFeeAmount" column="second_fee_amount" />
+        <result property="firstFeePaid" column="first_fee_paid" />
+        <result property="secondFeePaid" column="second_fee_paid" />
+        <result property="status" column="status" />
+        <result property="signTime" column="sign_time" />
+        <result property="submitTime" column="submit_time" />
+        <result property="financeAuditTime" column="finance_audit_time" />
+        <result property="bankLoanTime" column="bank_loan_time" />
+        <result property="financeUserId" column="finance_user_id" />
+        <result property="bankResult" column="bank_result" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <resultMap type="com.ruoyi.system.domain.loan.LoanFeeRecord" id="LoanFeeRecordResult">
+        <id property="feeId" column="fee_id" />
+        <result property="contractId" column="contract_id" />
+        <result property="contractNo" column="contract_no" />
+        <result property="stage" column="stage" />
+        <result property="amount" column="amount" />
+        <result property="payMethod" column="pay_method" />
+        <result property="payerName" column="payer_name" />
+        <result property="payTime" column="pay_time" />
+        <result property="collectorUserId" column="collector_user_id" />
+        <result property="collectorUserName" column="collector_user_name" />
+        <result property="status" column="status" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="remark" column="remark" />
+    </resultMap>
+
+    <sql id="selectLoanContractVo">
+        select c.contract_id, c.contract_no, c.customer_id, lc.customer_name, c.user_id, su.user_name,
+               c.dept_id, c.product_name, c.attachment_urls, c.contract_amount, c.disburse_amount,
+               c.first_fee_amount, c.second_fee_amount, c.first_fee_paid, c.second_fee_paid,
+               c.status, c.sign_time, c.submit_time, c.finance_audit_time, c.bank_loan_time,
+               c.finance_user_id, c.bank_result, c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from loan_contract c
+        left join loan_customer lc on c.customer_id = lc.customer_id
+        left join sys_user su on c.user_id = su.user_id
+    </sql>
+
+    <select id="selectLoanContractById" parameterType="Long" resultMap="LoanContractResult">
+        <include refid="selectLoanContractVo" />
+        where c.contract_id = #{contractId}
+    </select>
+
+    <select id="selectLoanContractList" parameterType="com.ruoyi.system.domain.loan.LoanContract" resultMap="LoanContractResult">
+        <include refid="selectLoanContractVo" />
+        <where>
+            <if test="contractNo != null and contractNo != ''">
+                and c.contract_no like concat('%', #{contractNo}, '%')
+            </if>
+            <if test="customerId != null">
+                and c.customer_id = #{customerId}
+            </if>
+            <if test="customerName != null and customerName != ''">
+                and lc.customer_name like concat('%', #{customerName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and c.status = #{status}
+            </if>
+            <if test="userId != null">
+                and c.user_id = #{userId}
+            </if>
+            <if test="deptId != null">
+                and c.dept_id = #{deptId}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(c.create_time, '%Y%m%d') &gt;= date_format(#{params.beginTime}, '%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(c.create_time, '%Y%m%d') &lt;= date_format(#{params.endTime}, '%Y%m%d')
+            </if>
+            ${params.dataScope}
+        </where>
+        order by c.contract_id desc
+    </select>
+
+    <insert id="insertLoanContract" parameterType="com.ruoyi.system.domain.loan.LoanContract" useGeneratedKeys="true" keyProperty="contractId">
+        insert into loan_contract(
+            contract_no, customer_id, user_id, dept_id, product_name, attachment_urls,
+            contract_amount, disburse_amount, first_fee_amount, second_fee_amount,
+            first_fee_paid, second_fee_paid, status, sign_time, submit_time,
+            finance_audit_time, bank_loan_time, finance_user_id, bank_result,
+            create_by, create_time, remark
+        )values(
+            #{contractNo}, #{customerId}, #{userId}, #{deptId}, #{productName}, #{attachmentUrls},
+            #{contractAmount}, #{disburseAmount}, #{firstFeeAmount}, #{secondFeeAmount},
+            #{firstFeePaid}, #{secondFeePaid}, #{status}, #{signTime}, #{submitTime},
+            #{financeAuditTime}, #{bankLoanTime}, #{financeUserId}, #{bankResult},
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateLoanContract" parameterType="com.ruoyi.system.domain.loan.LoanContract">
+        update loan_contract
+        <set>
+            <if test="contractNo != null and contractNo != ''">contract_no = #{contractNo},</if>
+            <if test="customerId != null">customer_id = #{customerId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="attachmentUrls != null">attachment_urls = #{attachmentUrls},</if>
+            <if test="contractAmount != null">contract_amount = #{contractAmount},</if>
+            <if test="disburseAmount != null">disburse_amount = #{disburseAmount},</if>
+            <if test="firstFeeAmount != null">first_fee_amount = #{firstFeeAmount},</if>
+            <if test="secondFeeAmount != null">second_fee_amount = #{secondFeeAmount},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="signTime != null">sign_time = #{signTime},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+            <if test="financeAuditTime != null">finance_audit_time = #{financeAuditTime},</if>
+            <if test="bankLoanTime != null">bank_loan_time = #{bankLoanTime},</if>
+            <if test="financeUserId != null">finance_user_id = #{financeUserId},</if>
+            <if test="bankResult != null">bank_result = #{bankResult},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = sysdate()
+        </set>
+        where contract_id = #{contractId}
+    </update>
+
+    <delete id="deleteLoanContractByIds" parameterType="Long">
+        delete from loan_contract where contract_id in
+        <foreach collection="array" item="contractId" open="(" separator="," close=")">
+            #{contractId}
+        </foreach>
+    </delete>
+
+    <select id="countContractNoUnique" resultType="int">
+        select count(1)
+        from loan_contract
+        where contract_no = #{contractNo}
+        <if test="contractId != null">
+            and contract_id != #{contractId}
+        </if>
+    </select>
+
+    <update id="submitFinanceReview">
+        update loan_contract
+        set status = 'FINANCE_REVIEW',
+            submit_time = #{submitTime},
+            update_by = #{operator},
+            update_time = sysdate()
+        where contract_id = #{contractId}
+    </update>
+
+    <update id="financeAudit" parameterType="com.ruoyi.system.domain.loan.LoanContract">
+        update loan_contract
+        <set>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="disburseAmount != null">disburse_amount = #{disburseAmount},</if>
+            <if test="financeAuditTime != null">finance_audit_time = #{financeAuditTime},</if>
+            <if test="bankLoanTime != null">bank_loan_time = #{bankLoanTime},</if>
+            <if test="financeUserId != null">finance_user_id = #{financeUserId},</if>
+            <if test="bankResult != null">bank_result = #{bankResult},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where contract_id = #{contractId}
+    </update>
+
+    <select id="selectFeeRecordListByContractId" parameterType="Long" resultMap="LoanFeeRecordResult">
+        select f.fee_id, f.contract_id, c.contract_no, f.stage, f.amount, f.pay_method, f.payer_name,
+               f.pay_time, f.collector_user_id, f.collector_user_name, f.status,
+               f.create_by, f.create_time, f.remark
+        from loan_fee_record f
+        left join loan_contract c on f.contract_id = c.contract_id
+        where f.contract_id = #{contractId}
+        order by f.pay_time desc, f.fee_id desc
+    </select>
+
+    <insert id="insertFeeRecord" parameterType="com.ruoyi.system.domain.loan.LoanFeeRecord" useGeneratedKeys="true" keyProperty="feeId">
+        insert into loan_fee_record(
+            contract_id, stage, amount, pay_method, payer_name, pay_time,
+            collector_user_id, collector_user_name, status, create_by, create_time, remark
+        )values(
+            #{contractId}, #{stage}, #{amount}, #{payMethod}, #{payerName}, #{payTime},
+            #{collectorUserId}, #{collectorUserName}, #{status}, #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <select id="sumStageFee" resultType="java.math.BigDecimal">
+        select ifnull(sum(amount), 0)
+        from loan_fee_record
+        where contract_id = #{contractId}
+          and stage = #{stage}
+          and status = 'PAID'
+    </select>
+
+    <update id="updateContractPaidFee">
+        update loan_contract
+        set first_fee_paid = #{firstFeePaid},
+            second_fee_paid = #{secondFeePaid},
+            update_by = #{operator},
+            update_time = sysdate()
+        where contract_id = #{contractId}
+    </update>
+
+</mapper>

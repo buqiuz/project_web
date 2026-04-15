@@ -290,6 +290,16 @@ source ~/.nvm/nvm.sh
 nvm use 20
 ~~~
 
+如果你希望直接在 PowerShell 执行一条 WSL 命令，推荐固定使用 bash -lc：
+
+~~~powershell
+C:\WINDOWS\System32\wsl.exe -d Ubuntu-24.04-Second bash -lc "source ~/.nvm/nvm.sh; nvm use 20; node -v"
+~~~
+
+注意：
+- 不要用 sh -lc 执行包含 nvm 的命令，sh 环境里通常没有 source 与 nvm 函数。
+- 本项目 bin 下脚本使用了 bash 语法（如 BASH_SOURCE、[[ ]] 等），应在 bash 下执行。
+
 3. 启动中间件：
 
 ~~~bash
@@ -337,6 +347,15 @@ node -v
 - [RuoYi-Cloud/bin/start-all-dev.sh](RuoYi-Cloud/bin/start-all-dev.sh)
 - [RuoYi-Cloud/bin/stop-all-dev.sh](RuoYi-Cloud/bin/stop-all-dev.sh)
 - [RuoYi-Cloud/bin/status-all-dev.sh](RuoYi-Cloud/bin/status-all-dev.sh)
+
+当前可用性说明：
+- 已在 Ubuntu-24.04-Second 中实测通过执行 ./bin/status-all-dev.sh。
+- 三个脚本当前均具备可执行权限，可继续使用。
+- 若从 PowerShell 直接调用，建议：
+
+~~~powershell
+C:\WINDOWS\System32\wsl.exe -d Ubuntu-24.04-Second bash -lc "cd /mnt/f/code/project_web/RuoYi-Cloud && ./bin/status-all-dev.sh"
+~~~
 
 启动全部（中间件 + 后端全模块 + 前端）：
 
