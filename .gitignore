@@ -1,0 +1,56 @@
+# Root-level ignore rules for project_web monorepo
+# Existing .gitignore files in subprojects still apply.
+
+######################################################################
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iws
+*.iml
+*.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.local
+*.swp
+
+######################################################################
+# Logs / Runtime files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+selenium-debug.log
+
+# Local run artifacts
+RuoYi-Cloud/.run/
+RuoYi-Cloud/.run-logs/
+
+######################################################################
+# Java / Maven / Gradle
+.gradle/
+**/target/
+
+######################################################################
+# Node / Frontend outputs
+**/node_modules/
+RuoYi-Cloud/ruoyi-ui/dist/
+RuoYi-Cloud-Vue3/dist/
+
+# Test reports
+tests/**/coverage/
+tests/e2e/reports/
+
+# Keep lockfiles consistent with existing project ignore policy
+**/package-lock.json
+**/yarn.lock
+
+######################################################################
+# Local container data (do not commit runtime state)
+RuoYi-Cloud/docker/mysql/data/
+RuoYi-Cloud/docker/mysql/logs/
+RuoYi-Cloud/docker/nacos/logs/
+RuoYi-Cloud/docker/redis/data/
