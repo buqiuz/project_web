@@ -95,7 +95,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getCodeImg } from '@/api/auth'
+import { getCodeImg, getUserInfo } from '@/api/auth'
 import { showToast } from 'vant'
 
 const router = useRouter()
@@ -187,7 +187,6 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    // 调用 authStore 登录，传入验证码和 uuid
     await authStore.login({
       username: loginForm.username,
       password: loginForm.password,
@@ -195,14 +194,40 @@ const handleLogin = async () => {
       uuid: codeUuid.value
     })
 
+    try {
+      const userInfoRes = await getUserInfo()
+      console.log('===== 当前用户完整信息 =====')
+      console.log('响应码:', userInfoRes.code)
+      console.log('响应消息:', userInfoRes.msg)
+      console.log('用户对象:', userInfoRes.user)
+
+      if (userInfoRes.user) {
+        console.log('用户ID:', userInfoRes.user.userId)
+        console.log('用户名:', userInfoRes.user.userName)
+        console.log('昵称:', userInfoRes.user.nickName)
+        console.log('部门ID:', userInfoRes.user.deptId)
+        console.log('邮箱:', userInfoRes.user.email)
+        console.log('手机号:', userInfoRes.user.phonenumber)
+        console.log('头像:', userInfoRes.user.avatar)
+        console.log('性别:', userInfoRes.user.sex)
+        console.log('状态:', userInfoRes.user.status)
+      }
+
+      console.log('角色列表:', userInfoRes.roles)
+      console.log('权限列表:', userInfoRes.permissions)
+      console.log('=========================')
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+    }
+
     saveRememberedAccount()
 
     const redirect = route.query.redirect || '/workbench'
     router.replace(redirect)
   } catch (error) {
-    // 登录失败时刷新验证码（常见做法）
     refreshCode()
     console.error('登录失败:', error)
+    showToast(error.message || '登录失败，请检查账号密码')
   } finally {
     loading.value = false
   }

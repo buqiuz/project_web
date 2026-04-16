@@ -32,9 +32,11 @@
 
 <script setup>
 import { useSalesStore } from '../stores/sales'
+import { useAuthStore } from '../stores/auth'
 import { showDialog, showToast } from 'vant'
 
 const store = useSalesStore()
+const authStore = useAuthStore()
 
 const formatMoney = (value) => {
   return (value / 10000).toFixed(2)
@@ -51,8 +53,18 @@ const showMyContracts = () => {
   showToast('合同列表: 2份待审核, 1份已放款')
 }
 
-const logout = () => {
-  showToast('演示环境, 退出成功')
+const logout = async () => {
+  try {
+    await showDialog({
+      title: '提示',
+      message: '确定要退出登录吗？'
+    })
+    await authStore.logout()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('退出失败:', error)
+    }
+  }
 }
 </script>
 
