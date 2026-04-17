@@ -1,78 +1,186 @@
 <template>
   <div class="page-container">
-    <van-row justify="space-between" align="center">
-      <van-col>
-        <h2 class="greeting">你好，{{ store.currentUser.name }}</h2>
-        <span class="dept">{{ store.currentUser.department }}</span>
-      </van-col>
-      <van-col>
-        <van-image round width="44" height="44" :src="store.currentUser.avatar" />
-      </van-col>
-    </van-row>
+    <!-- 下拉刷新 -->
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh" success-text="刷新成功">
+      <van-row justify="space-between" align="center">
+        <van-col>
+          <h2 class="greeting">你好，{{ store.currentUser.name }}</h2>
+          <span class="dept">{{ store.currentUser.department }}</span>
+        </van-col>
+        <van-col>
+          <van-image round width="44" height="44" :src="store.currentUser.avatar" />
+        </van-col>
+      </van-row>
 
-    <!-- 今日指标卡片 -->
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">📞 电话量</div>
-        <div class="stat-value">{{ store.todayLog.callCount }}<span class="stat-unit">通</span></div>
-        <div class="stat-sub">有效 {{ store.todayLog.validCallCount }}</div>
+      <!-- 今日指标卡片 -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">
+            <van-icon name="phone-o" class="stat-icon" />
+            电话量
+          </div>
+          <div class="stat-value">{{ store.todayLog.callCount }}<span class="stat-unit">通</span></div>
+          <div class="stat-sub">有效 {{ store.todayLog.validCallCount }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">
+            <van-icon name="star-o" class="stat-icon" />
+            意向客户
+          </div>
+          <div class="stat-value">{{ store.todayLog.intentCount }}<span class="stat-unit">人</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">
+            <van-icon name="friends-o" class="stat-icon" />
+            面谈
+          </div>
+          <div class="stat-value">{{ store.todayLog.meetingCount }}<span class="stat-unit">次</span></div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-label">
+            <van-icon name="edit" class="stat-icon" />
+            今日签约
+          </div>
+          <div class="stat-value">{{ store.todayLog.signedCount || 0 }}<span class="stat-unit">单</span></div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">🎯 意向客户</div>
-        <div class="stat-value">{{ store.todayLog.intentCount }}<span class="stat-unit">人</span></div>
+
+      <!-- 快捷填写日志 -->
+      <van-cell-group inset class="quick-log">
+        <van-cell title="快速填写工作日志" is-link @click="openLogPopup">
+          <template #icon>
+            <van-icon name="edit" class="cell-icon" />
+          </template>
+        </van-cell>
+      </van-cell-group>
+
+      <!-- 业绩速览 -->
+      <div class="section-title">
+        <span>
+          <van-icon name="bar-chart-o" class="section-icon" />
+          本月业绩
+        </span>
+        <van-tag type="primary" size="medium">{{ currentMonth }}</van-tag>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">🤝 面谈</div>
-        <div class="stat-value">{{ store.todayLog.meetingCount }}<span class="stat-unit">次</span></div>
+
+      <!-- 核心指标卡片 -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">
+            <van-icon name="balance-list-o" class="stat-icon" />
+            签约金额
+          </div>
+          <div class="stat-value">¥{{ formatAmount(store.performance.signedAmount) }}<span class="stat-unit" v-if="shouldShowWan(store.performance.signedAmount)">万</span></div>
+          <div class="stat-sub">{{ store.performance.contractCount }} 单合同</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">
+            <van-icon name="checked" class="stat-icon" />
+            放款金额
+          </div>
+          <div class="stat-value">¥{{ formatAmount(store.performance.loanAmount) }}<span class="stat-unit" v-if="shouldShowWan(store.performance.loanAmount)">万</span></div>
+          <div class="stat-sub">{{ store.performance.loanedCount }} 单已放款</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">
+            <van-icon name="gold-coin-o" class="stat-icon" />
+            服务费
+          </div>
+          <div class="stat-value">¥{{ formatAmount(store.performance.feeIncome) }}<span class="stat-unit" v-if="shouldShowWan(store.performance.feeIncome)">万</span></div>
+          <div class="stat-sub">前置+后置</div>
+        </div>
+
+        <div class="stat-card highlight">
+          <div class="stat-label">
+            <van-icon name="cash-back-record" class="stat-icon" />
+            预计提成
+          </div>
+          <div class="stat-value">¥{{ formatAmount(store.performance.commissionAmount) }}<span class="stat-unit" v-if="shouldShowWan(store.performance.commissionAmount)">万</span></div>
+          <div class="stat-sub">本月预估</div>
+        </div>
       </div>
-      <div class="stat-card highlight">
-        <div class="stat-label">🏆 部门排名</div>
-        <div class="stat-value">{{ store.performance.rankInDept }}<span class="stat-unit">/12</span></div>
+
+      <!-- 待办提醒 -->
+      <div class="section-title">
+        <span>
+          <van-icon name="clock-o" class="section-icon" />
+          待跟进客户
+        </span>
+        <van-icon name="arrow" />
       </div>
-    </div>
+      <van-cell v-for="cust in pendingCustomers" :key="cust.id" :title="cust.name" :label="`意向: ${cust.intent} · ${cust.lastContact}`">
+        <template #right-icon>
+          <van-button size="small" type="primary" plain @click="goToContract(cust)" v-if="!cust.hasContract">签约</van-button>
+          <van-tag v-else type="success">已签约</van-tag>
+        </template>
+      </van-cell>
 
-    <!-- 快捷填写日志 -->
-    <van-cell-group inset class="quick-log">
-      <van-cell title="📝 快速填写工作日志" is-link @click="showLogPopup = true" />
-    </van-cell-group>
-
-    <!-- 业绩速览 -->
-    <div class="section-title">
-      <span>📊 业绩概览</span>
-      <van-tag type="primary" size="medium">本月</van-tag>
-    </div>
-    <van-grid :column-num="3" :border="false" :gutter="8">
-      <van-grid-item text="客户数" :value="store.performance.totalCustomers" />
-      <van-grid-item text="签约(万)" :value="(store.performance.signedAmount/10000).toFixed(1)" />
-      <van-grid-item text="放款(万)" :value="(store.performance.loanAmount/10000).toFixed(1)" />
-    </van-grid>
-
-    <!-- 待办提醒 -->
-    <div class="section-title">
-      <span>⏰ 待跟进客户</span>
-      <van-icon name="arrow" />
-    </div>
-    <van-cell v-for="cust in pendingCustomers" :key="cust.id" :title="cust.name" :label="`意向: ${cust.intent} · ${cust.lastContact}`">
-      <template #right-icon>
-        <van-button size="small" type="primary" plain @click="store.signContract(cust.id)" v-if="!cust.hasContract">签约</van-button>
-        <van-tag v-else type="success">已签约</van-tag>
-      </template>
-    </van-cell>
-
-    <!-- 公海提醒 -->
-    <van-notice-bar left-icon="volume-o" scrollable text="公海现有2位客户可领取，超过7天未跟进将自动释放" background="#fef8e7" color="#d48806" />
+      <!-- 公海提醒 -->
+      <van-notice-bar left-icon="volume-o" scrollable :text="seaNoticeText" background="#fef8e7" color="#d48806" />
+    </van-pull-refresh>
 
     <!-- 日志填写弹窗 -->
     <van-popup v-model:show="showLogPopup" position="bottom" round :style="{ height: '50%' }">
       <div class="popup-content">
         <h3>填写工作日志 ({{ store.todayLog.date }})</h3>
         <van-form @submit="onLogSubmit">
-          <van-field v-model="logForm.callCount" type="digit" label="电话数" placeholder="请输入" />
-          <van-field v-model="logForm.validCallCount" type="digit" label="有效电话" />
-          <van-field v-model="logForm.intentCount" type="digit" label="意向客户" />
-          <van-field v-model="logForm.meetingCount" type="digit" label="面谈客户" />
+          <van-field
+            v-model="logForm.callCount"
+            type="digit"
+            label="电话数"
+            placeholder="请输入"
+            :rules="[{ required: true, message: '请填写电话数' }]"
+          >
+            <template #left-icon>
+              <van-icon name="phone-o" />
+            </template>
+          </van-field>
+          <van-field
+            v-model="logForm.validCallCount"
+            type="digit"
+            label="有效电话"
+            :rules="[{ required: true, message: '请填写有效电话数' }]"
+          >
+            <template #left-icon>
+              <van-icon name="checked" />
+            </template>
+          </van-field>
+          <van-field
+            v-model="logForm.intentCount"
+            type="digit"
+            label="意向客户"
+            :rules="[{ required: true, message: '请填写意向客户数' }]"
+          >
+            <template #left-icon>
+              <van-icon name="star-o" />
+            </template>
+          </van-field>
+          <van-field
+            v-model="logForm.meetingCount"
+            type="digit"
+            label="面谈客户"
+            :rules="[{ required: true, message: '请填写面谈客户数' }]"
+          >
+            <template #left-icon>
+              <van-icon name="friends-o" />
+            </template>
+          </van-field>
+          <van-field
+            v-model="logForm.remark"
+            rows="2"
+            autosize
+            type="textarea"
+            label="备注"
+            placeholder="可选填"
+          >
+            <template #left-icon>
+              <van-icon name="notes-o" />
+            </template>
+          </van-field>
           <div class="popup-btn">
-            <van-button round block type="primary" native-type="submit">保存</van-button>
+            <van-button round block type="primary" native-type="submit" :loading="submitting">保存</van-button>
           </div>
         </van-form>
       </div>
@@ -81,39 +189,149 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSalesStore } from '../stores/sales'
+import { showToast } from 'vant'
+import dayjs from 'dayjs'
 
+const router = useRouter()
 const store = useSalesStore()
 const showLogPopup = ref(false)
+const submitting = ref(false)
+const refreshing = ref(false)
 
 const logForm = reactive({
-  callCount: store.todayLog.callCount,
-  validCallCount: store.todayLog.validCallCount,
-  intentCount: store.todayLog.intentCount,
-  meetingCount: store.todayLog.meetingCount
+  callCount: 0,
+  validCallCount: 0,
+  intentCount: 0,
+  meetingCount: 0,
+  remark: ''
 })
+
+// 当前月份显示
+const currentMonth = computed(() => {
+  return dayjs().format('YYYY年MM月')
+})
+
+// 格式化金额（转换为万元或保留元）
+const formatAmount = (amount) => {
+  if (!amount && amount !== 0) return '0'
+  const num = parseFloat(amount)
+  if (num >= 10000) {
+    return (num / 10000).toFixed(2)
+  }
+  return num.toFixed(2)
+}
+
+// 判断是否显示"万"单位
+const shouldShowWan = (amount) => {
+  if (!amount && amount !== 0) return false
+  return parseFloat(amount) >= 10000
+}
 
 const pendingCustomers = computed(() => {
   return store.myCustomers.filter(c => c.status !== '已放款').slice(0, 3)
 })
 
+const seaNoticeText = computed(() => {
+  const count = store.seaCustomers.length
+  if (count > 0) {
+    return `公海现有${count}位客户可领取，超过7天未跟进将自动释放`
+  }
+  return '公海暂无客户可领取'
+})
+
+// 监听 store 中的 todayLog 变化，同步到表单（静默同步，不打印日志）
 watch(() => store.todayLog, (newVal) => {
-  logForm.callCount = newVal.callCount
-  logForm.validCallCount = newVal.validCallCount
-  logForm.intentCount = newVal.intentCount
-  logForm.meetingCount = newVal.meetingCount
+  logForm.callCount = newVal.callCount || 0
+  logForm.validCallCount = newVal.validCallCount || 0
+  logForm.intentCount = newVal.intentCount || 0
+  logForm.meetingCount = newVal.meetingCount || 0
 }, { deep: true })
 
-const onLogSubmit = () => {
-  store.updateTodayLog({
-    callCount: Number(logForm.callCount),
-    validCallCount: Number(logForm.validCallCount),
-    intentCount: Number(logForm.intentCount),
-    meetingCount: Number(logForm.meetingCount)
-  })
-  showLogPopup.value = false
+// 打开日志弹窗
+const openLogPopup = () => {
+  // 同步最新数据到表单
+  logForm.callCount = store.todayLog.callCount || 0
+  logForm.validCallCount = store.todayLog.validCallCount || 0
+  logForm.intentCount = store.todayLog.intentCount || 0
+  logForm.meetingCount = store.todayLog.meetingCount || 0
+  logForm.remark = ''
+  showLogPopup.value = true
 }
+
+// 提交日志
+const onLogSubmit = async () => {
+  submitting.value = true
+
+  const success = await store.saveWorkLog({
+    callCount: logForm.callCount,
+    validCallCount: logForm.validCallCount,
+    intentCount: logForm.intentCount,
+    meetingCount: logForm.meetingCount,
+    remark: logForm.remark
+  })
+
+  submitting.value = false
+
+  if (success) {
+    showLogPopup.value = false
+  }
+}
+
+// 跳转到签署合同页面
+const goToContract = (cust) => {
+  router.push({
+    path: '/customers',
+    query: { action: 'contract', customerId: cust.id }
+  })
+}
+
+// 下拉刷新
+const onRefresh = async () => {
+  try {
+    // 强制刷新所有数据
+    await Promise.all([
+      store.loadTodayWorkLog(),
+      store.loadMyCustomers(),
+      store.loadSeaCustomers(),
+      store.refreshPerformance()
+    ])
+
+    showToast('刷新成功')
+  } catch (error) {
+    console.error('刷新失败:', error)
+    showToast('刷新失败')
+  } finally {
+    refreshing.value = false
+  }
+}
+
+// 页面加载时获取真实数据
+onMounted(async () => {
+  // 强制刷新所有数据，不使用缓存
+
+  // 1. 加载今日工作日志（每次都发送请求）
+  await store.loadTodayWorkLog()
+
+  // 2. 并行加载客户数据（每次都发送请求）
+  await Promise.all([
+    store.loadMyCustomers(),
+    store.loadSeaCustomers()
+  ])
+
+  // 3. 刷新业绩数据（每次都发送请求）
+  await store.refreshPerformance()
+
+  // 4. 所有数据加载完成后，统一打印一次
+  console.log('===== Workbench 页面数据加载完成 =====')
+  console.log('📊 今日工作日志:', JSON.stringify(store.todayLog, null, 2))
+  console.log('👥 我的客户数:', store.myCustomers.length)
+  console.log('🌊 公海客户数:', store.seaCustomers.length)
+  console.log('💼 业绩数据:', JSON.stringify(store.performance, null, 2))
+  console.log('====================================')
+})
 </script>
 
 <style scoped>
@@ -149,6 +367,13 @@ const onLogSubmit = () => {
   font-size: 14px;
   color: #606266;
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stat-icon {
+  color: #1989fa;
+  font-size: 16px;
 }
 .stat-value {
   font-size: 28px;
@@ -169,6 +394,11 @@ const onLogSubmit = () => {
 .quick-log {
   margin: 8px 0 20px;
 }
+.cell-icon {
+  margin-right: 8px;
+  color: #1989fa;
+  font-size: 18px;
+}
 .section-title {
   font-size: 16px;
   font-weight: 600;
@@ -176,6 +406,11 @@ const onLogSubmit = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.section-icon {
+  margin-right: 6px;
+  color: #1989fa;
+  font-size: 18px;
 }
 .popup-content {
   padding: 20px 16px;

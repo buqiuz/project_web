@@ -42,21 +42,23 @@
           :rules="[{ required: true, message: '请输入验证码' }]"
           left-icon="shield-o"
           clearable
-        >
-          <template #button>
-            <van-image
-              :src="codeImg"
-              @click="refreshCode"
-              class="captcha-img"
-              fit="contain"
-            >
-              <template #loading>
-                <van-loading type="spinner" size="20" />
-              </template>
-            </van-image>
-          </template>
-        </van-field>
+        />
       </van-cell-group>
+
+      <!-- 验证码图片 -->
+      <div class="captcha-wrapper">
+        <van-image
+          :src="codeImg"
+          @click="refreshCode"
+          class="captcha-img"
+          fit="contain"
+        >
+          <template #loading>
+            <van-loading type="spinner" size="20" />
+          </template>
+        </van-image>
+        <span class="captcha-tip">点击图片刷新</span>
+      </div>
 
       <div class="login-options">
         <van-checkbox v-model="loginForm.rememberMe" icon-size="16px">
@@ -78,15 +80,6 @@
           登 录
         </van-button>
       </div>
-
-      <div class="demo-tip">
-        <van-divider>演示账号（若依默认）</van-divider>
-        <div class="demo-accounts">
-          <van-tag plain type="primary" @click="fillDemo('admin')">管理员</van-tag>
-          <van-tag plain type="success" @click="fillDemo('ry')">普通用户</van-tag>
-        </div>
-        <p class="tip-text">点击标签自动填充，密码任意</p>
-      </div>
     </van-form>
   </div>
 </template>
@@ -103,8 +96,8 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(false)
-const codeImg = ref('')          // 验证码图片 base64
-const codeUuid = ref('')         // 验证码 uuid
+const codeImg = ref('')
+const codeUuid = ref('')
 
 // 表单数据
 const loginForm = reactive({
@@ -145,7 +138,7 @@ const fetchCode = async () => {
  * 刷新验证码
  */
 const refreshCode = () => {
-  loginForm.code = ''   // 清空已输入验证码
+  loginForm.code = ''
   fetchCode()
 }
 
@@ -233,22 +226,6 @@ const handleLogin = async () => {
   }
 }
 
-/**
- * 快速填充演示账号
- */
-const fillDemo = (type) => {
-  switch (type) {
-    case 'admin':
-      loginForm.username = 'admin'
-      loginForm.password = 'admin123'
-      break
-    case 'ry':
-      loginForm.username = 'ry'
-      loginForm.password = '123456'
-      break
-  }
-}
-
 const forgotPassword = () => {
   showToast('请联系系统管理员重置密码')
 }
@@ -256,7 +233,7 @@ const forgotPassword = () => {
 // 页面初始化
 onMounted(() => {
   loadRememberedAccount()
-  fetchCode()  // 获取验证码
+  fetchCode()
   
   if (authStore.isLoggedIn) {
     router.replace('/workbench')
@@ -308,6 +285,33 @@ onMounted(() => {
   flex: 1;
 }
 
+.captcha-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.captcha-img {
+  width: 120px;
+  height: 48px;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid #ebedf0;
+  transition: all 0.3s;
+}
+
+.captcha-img:hover {
+  border-color: #1677ff;
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.2);
+}
+
+.captcha-tip {
+  font-size: 12px;
+  color: #969799;
+}
+
 .login-options {
   display: flex;
   justify-content: space-between;
@@ -322,31 +326,6 @@ onMounted(() => {
 
 .login-btn-wrapper {
   margin: 16px 16px 0;
-}
-
-.demo-tip {
-  margin-top: 40px;
-  padding: 0 16px;
-}
-
-.demo-accounts {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin: 12px 0;
-}
-
-.demo-accounts .van-tag {
-  padding: 6px 16px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.tip-text {
-  font-size: 12px;
-  color: #c0c4cc;
-  text-align: center;
-  margin-top: 8px;
 }
 
 /* 验证码图片样式 */

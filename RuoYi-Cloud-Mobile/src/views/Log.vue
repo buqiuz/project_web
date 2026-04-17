@@ -6,23 +6,50 @@
       :show-confirm="false" 
       :min-date="minDate" 
       :max-date="maxDate" 
-      :default-date="today" 
+      :default-date="defaultDate"
       @select="onDateSelect" 
       class="calendar"
     />
     
     <van-cell-group inset>
-      <van-cell title="日期" :value="selectedDate" />
+      <van-cell title="日期" :value="selectedDate">
+        <template #icon>
+          <van-icon name="calendar-o" class="cell-icon" />
+        </template>
+      </van-cell>
     </van-cell-group>
 
     <div class="log-form">
       <van-form @submit="saveLog">
-        <van-field v-model="logData.callCount" type="digit" label="📞 电话数" />
-        <van-field v-model="logData.validCallCount" type="digit" label="✅ 有效电话" />
-        <van-field v-model="logData.intentCount" type="digit" label="🎯 意向客户" />
-        <van-field v-model="logData.meetingCount" type="digit" label="🤝 面谈数" />
+        <van-field v-model="logData.callCount" type="digit" label="电话数">
+          <template #left-icon>
+            <van-icon name="phone-o" class="field-icon" />
+          </template>
+        </van-field>
+
+        <van-field v-model="logData.validCallCount" type="digit" label="有效电话">
+          <template #left-icon>
+            <van-icon name="checked" class="field-icon" />
+          </template>
+        </van-field>
+
+        <van-field v-model="logData.intentCount" type="digit" label="意向客户">
+          <template #left-icon>
+            <van-icon name="star-o" class="field-icon" />
+          </template>
+        </van-field>
+
+        <van-field v-model="logData.meetingCount" type="digit" label="面谈数">
+          <template #left-icon>
+            <van-icon name="friends-o" class="field-icon" />
+          </template>
+        </van-field>
+
         <div class="form-btn">
-          <van-button block round type="primary" native-type="submit">保存日志</van-button>
+          <van-button block round type="primary" native-type="submit">
+            <van-icon name="success" style="margin-right: 4px;" />
+            保存日志
+          </van-button>
         </div>
       </van-form>
     </div>
@@ -30,7 +57,24 @@
     <van-divider>历史日志 (最近3天)</van-divider>
     <van-cell v-for="item in historyLogs" :key="item.date" :title="item.date">
       <template #label>
-        <span>📞{{ item.callCount }}  ✅{{ item.validCallCount }}  🎯{{ item.intentCount }}  🤝{{ item.meetingCount }}</span>
+        <div class="log-stats">
+          <span class="stat-item">
+            <van-icon name="phone-o" class="stat-icon" />
+            {{ item.callCount }}
+          </span>
+          <span class="stat-item">
+            <van-icon name="checked" class="stat-icon" />
+            {{ item.validCallCount }}
+          </span>
+          <span class="stat-item">
+            <van-icon name="star-o" class="stat-icon" />
+            {{ item.intentCount }}
+          </span>
+          <span class="stat-item">
+            <van-icon name="friends-o" class="stat-icon" />
+            {{ item.meetingCount }}
+          </span>
+        </div>
       </template>
     </van-cell>
   </div>
@@ -47,6 +91,7 @@ const today = dayjs().format('YYYY-MM-DD')
 const selectedDate = ref(today)
 const minDate = dayjs().subtract(30, 'day').toDate()
 const maxDate = dayjs().toDate()
+const defaultDate = dayjs().toDate()
 
 const logData = reactive({
   callCount: 0,
@@ -78,9 +123,19 @@ const onDateSelect = (value) => {
   loadLogForDate(selectedDate.value)
 }
 
-const saveLog = () => {
+const saveLog = async () => {
   if (selectedDate.value === today) {
-    store.updateTodayLog({ ...logData })
+    const success = await store.saveWorkLog({
+      callCount: logData.callCount,
+      validCallCount: logData.validCallCount,
+      intentCount: logData.intentCount,
+      meetingCount: logData.meetingCount,
+      remark: ''
+    })
+
+    if (!success) {
+      showToast('保存失败')
+    }
   } else {
     const idx = historyLogs.value.findIndex(h => h.date === selectedDate.value)
     const entry = { date: selectedDate.value, ...logData }
@@ -105,10 +160,36 @@ onMounted(() => {
 .calendar {
   margin-bottom: 12px;
 }
+.cell-icon {
+  margin-right: 8px;
+  color: #1989fa;
+  font-size: 18px;
+}
 .log-form {
   margin: 20px 0;
 }
+.field-icon {
+  margin-right: 6px;
+  color: #1989fa;
+  font-size: 16px;
+}
 .form-btn {
   margin: 20px 16px;
+}
+.log-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #646566;
+}
+.stat-icon {
+  color: #1989fa;
+  font-size: 14px;
 }
 </style>
