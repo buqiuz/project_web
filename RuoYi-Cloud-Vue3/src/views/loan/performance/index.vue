@@ -214,7 +214,8 @@ import {
   listPerformanceRank,
   listPerformanceCommission
 } from '@/api/loan/performance'
-
+// 【新增这一行引入】
+import { checkPermi } from '@/utils/permission'
 const loading = ref(false)
 const updateTime = ref(new Date())
 
@@ -272,28 +273,36 @@ async function loadAll() {
   loading.value = true
   const q = normalizeQuery()
   try {
-    const [
-      overviewRes,
-      personalRes,
-      deptRes,
-      zoneRes,
-      rankRes,
-      commissionRes
-    ] = await Promise.all([
-      getLoanPerformanceOverview(q),
-      listPersonalPerformance(q),
-      listDeptPerformance(q),
-      listZonePerformance(q),
-      listPerformanceRank(q),
-      listPerformanceCommission(q)
-    ])
+    const promises = []
 
-    overview.value = overviewRes.data || {}
-    personalList.value = personalRes.data || []
-    deptList.value = deptRes.data || []
-    zoneList.value = zoneRes.data || []
-    rankList.value = rankRes.data || []
-    commissionList.value = commissionRes.data || []
+    // 1. 个人业绩与总览
+    if (checkPermi(['loan:performance:view'])) {
+      promises.push(getLoanPerformanceOverview(q).then(res => { overview.value = res.data || {} }).catch(() => {}))
+      promises.push(listPersonalPerformance(q).then(res => { personalList.value = res.data || [] }).catch(() => {}))
+    }
+
+    // 2. 部门统计业绩
+    if (checkPermi(['loan:performance:dept'])) {
+      promises.push(listDeptPerformance(q).then(res => { deptList.value = res.data || [] }).catch(() => {}))
+    }
+
+    // 3. 战区统计业绩
+    if (checkPermi(['loan:performance:zone'])) {
+      promises.push(listZonePerformance(q).then(res => { zoneList.value = res.data || [] }).catch(() => {}))
+    }
+
+    // 4. 销售排名
+    if (checkPermi(['loan:performance:rank'])) {
+      promises.push(listPerformanceRank(q).then(res => { rankList.value = res.data || [] }).catch(() => {}))
+    }
+
+    // 5. 提成测算
+    if (checkPermi(['loan:performance:commission'])) {
+      promises.push(listPerformanceCommission(q).then(res => { commissionList.value = res.data || [] }).catch(() => {}))
+    }
+
+    // 等待所有拥有权限的请求处理完毕
+    await Promise.all(promises)
     updateTime.value = new Date()
   } finally {
     loading.value = false

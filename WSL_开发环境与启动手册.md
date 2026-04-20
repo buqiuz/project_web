@@ -14,6 +14,7 @@
 
 你指定的 WSL 发行版可访问：Ubuntu-24.04-Second。
 本手册基于以下工作区：
+
 - /mnt/f/code/project_web/RuoYi-Cloud
 - /mnt/f/code/project_web/RuoYi-Cloud-Vue3
 
@@ -138,7 +139,7 @@ mvn -pl ruoyi-gateway -am -DskipTests compile
 ### 5.1 启动基础中间件（MySQL/Redis/Nacos/Sentinel）
 
 ~~~bash
-cd /mnt/f/code/project_web/RuoYi-Cloud/docker
+cd /mnt/d/Project/project_web/RuoYi-Cloud/docker
 docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos
 docker compose ps
 ~~~
@@ -146,7 +147,7 @@ docker compose ps
 如需同时拉起 Sentinel 控制台：
 
 ~~~bash
-cd /mnt/f/code/project_web/RuoYi-Cloud/docker
+cd /mnt/d/Project/project_web/RuoYi-Cloud/docker
 docker compose up -d ruoyi-mysql ruoyi-redis ruoyi-nacos ruoyi-sentinel
 docker compose ps ruoyi-sentinel
 ~~~
@@ -158,7 +159,7 @@ docker compose ps ruoyi-sentinel
 如果你需要强制重新自动导入（会清空现有库数据）：
 
 ~~~bash
-cd /mnt/f/code/project_web/RuoYi-Cloud/docker
+cd /mnt/d/Project/project_web/RuoYi-Cloud/docker
 docker compose down
 docker volume rm docker_ruoyi-mysql-data
 docker compose up -d ruoyi-mysql

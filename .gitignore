@@ -54,3 +54,4 @@ RuoYi-Cloud/docker/mysql/data/
 RuoYi-Cloud/docker/mysql/logs/
 RuoYi-Cloud/docker/nacos/logs/
 RuoYi-Cloud/docker/redis/data/
+RuoYi-Cloud-Vue3/vite.config.js
